@@ -4,6 +4,7 @@ module Retry
         , RetryRouterTagger
         , RetryCmdTagger
         , Config
+        , Msg
         , Model
         , update
         , constantDelay
@@ -14,7 +15,7 @@ module Retry
 {-|
     Generic Retry Mechanism.
 
-@docs FailureTagger, RetryRouterTagger, RetryCmdTagger, Config, Model, update, constantDelay, exponentialDelay, retry
+@docs FailureTagger, RetryRouterTagger, RetryCmdTagger, Config, Msg, Model, update, constantDelay, exponentialDelay, retry
 -}
 
 import Task
@@ -60,6 +61,9 @@ type alias Model =
     {}
 
 
+{-|
+    Retry Msgs.
+-}
 type Msg msg
     = Nop
     | OperationFailed (RetryCmdTagger msg) (Cmd msg) Int msg
