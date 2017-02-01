@@ -78,8 +78,8 @@ delayUpdateMsg msg delay =
 {-|
     Retry Update.
 -}
-update : Config -> Model -> Msg msg -> ( ( Model, Cmd (Msg msg) ), List msg )
-update config model msg =
+update : Config -> Msg msg -> Model -> ( ( Model, Cmd (Msg msg) ), List msg )
+update config msg model =
     case msg of
         Nop ->
             ( model ! [], [] )
