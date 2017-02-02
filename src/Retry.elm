@@ -107,7 +107,7 @@ update config msg model =
         OperationFailed retryCmdTagger failureMsg ->
             (model.retryCount + 1 >= config.retryMax)
                 ? ( ( model ! [], [ failureMsg ] )
-                  , ( model ! [ delayUpdateMsg (ReturnMsg <| retryCmdTagger model.retryCount model.cmd) <| config.delayNext model.retryCount ], [] )
+                  , ( { model | retryCount = model.retryCount + 1 } ! [ delayUpdateMsg (ReturnMsg <| retryCmdTagger model.retryCount model.cmd) <| config.delayNext model.retryCount ], [] )
                   )
 
 
