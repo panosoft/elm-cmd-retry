@@ -43,7 +43,7 @@ type alias RetryRouterTagger msg =
     Tagger for parent to retry original command.
 -}
 type alias RetryCmdTagger msg =
-    Int -> Cmd msg -> msg
+    Int -> msg -> Cmd msg -> msg
 
 
 {-|
@@ -107,7 +107,7 @@ update config msg model =
         OperationFailed retryCmdTagger failureMsg ->
             (model.retryCount + 1 >= config.retryMax)
                 ? ( ( model ! [], [ failureMsg ] )
-                  , ( { model | retryCount = model.retryCount + 1 } ! [ delayUpdateMsg (ReturnMsg <| retryCmdTagger model.retryCount model.cmd) <| config.delayNext model.retryCount ], [] )
+                  , ( { model | retryCount = model.retryCount + 1 } ! [ delayUpdateMsg (ReturnMsg <| retryCmdTagger model.retryCount failureMsg model.cmd) <| config.delayNext model.retryCount ], [] )
                   )
 
 
