@@ -6,6 +6,7 @@ module Retry
         , Config
         , Msg
         , Model
+        , initModel
         , update
         , constantDelay
         , exponentialDelay
@@ -15,7 +16,7 @@ module Retry
 {-|
     Generic Retry Mechanism.
 
-@docs FailureTagger, RetryRouterTagger, RetryCmdTagger, Config, Msg, Model, update, constantDelay, exponentialDelay, retry
+@docs FailureTagger, RetryRouterTagger, RetryCmdTagger, Config, Msg, Model, initModel, update, constantDelay, exponentialDelay, retry
 -}
 
 import Task
@@ -75,6 +76,20 @@ type Msg msg
 delayUpdateMsg : Msg msg -> Time -> Cmd (Msg msg)
 delayUpdateMsg msg delay =
     Task.perform (\_ -> Nop) (\_ -> msg) <| Process.sleep delay
+
+
+
+-- API
+
+
+{-|
+    Create an initial model.
+-}
+initModel : Model msg
+initModel =
+    { cmd = Cmd.none
+    , retryCount = 1
+    }
 
 
 {-|
