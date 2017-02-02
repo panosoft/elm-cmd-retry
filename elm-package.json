@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
-    "summary": "Generic Retry Mechanism",
-    "repository": "https://github.com/panosoft/elm-retry.git",
+    "summary": "Cmd Retry Mechanism",
+    "repository": "https://github.com/panosoft/elm-cmd-retry.git",
     "license": "Unlicense",
     "source-directories": [
         "src"

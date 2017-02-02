@@ -25,6 +25,15 @@ import Time exposing (Time)
 import Utils.Ops exposing ((?))
 
 
+delayUpdateMsg : Msg msg -> Time -> Cmd (Msg msg)
+delayUpdateMsg msg delay =
+    Task.perform (\_ -> Nop) (\_ -> msg) <| Process.sleep delay
+
+
+
+-- API
+
+
 {-|
     Tagger for failed operations.
 -}
@@ -33,7 +42,7 @@ type alias FailureTagger a msg =
 
 
 {-|
-    Tagger to route back to this module.
+    Tagger to route back to Retry module.
 -}
 type alias RetryRouterTagger msg =
     Msg msg -> msg
@@ -69,17 +78,8 @@ type alias Model msg =
 -}
 type Msg msg
     = Nop
-    | OperationFailed (RetryCmdTagger msg) msg
+    | CmdFailed (RetryCmdTagger msg) msg
     | ReturnMsg msg
-
-
-delayUpdateMsg : Msg msg -> Time -> Cmd (Msg msg)
-delayUpdateMsg msg delay =
-    Task.perform (\_ -> Nop) (\_ -> msg) <| Process.sleep delay
-
-
-
--- API
 
 
 {-|
@@ -104,7 +104,7 @@ update config msg model =
         ReturnMsg msg ->
             ( model ! [], [ msg ] )
 
-        OperationFailed retryCmdTagger failureMsg ->
+        CmdFailed retryCmdTagger failureMsg ->
             (model.retryCount > config.retryMax)
                 ? ( ( model ! [], [ failureMsg ] )
                   , ( { model | retryCount = model.retryCount + 1 } ! [ delayUpdateMsg (ReturnMsg <| retryCmdTagger model.retryCount failureMsg model.cmd) <| config.delayNext model.retryCount ], [] )
@@ -115,7 +115,7 @@ update config msg model =
     Constant delay.
 -}
 constantDelay : Int -> Int -> Time
-constantDelay delay retryCount =
+constantDelay delay _ =
     toFloat <| delay
 
 
@@ -128,16 +128,16 @@ exponentialDelay delay maxDelay retryCount =
 
 
 {-|
-    Retry an operation.
+    Retry a Cmd.
 -}
 retry : Model msg -> RetryRouterTagger msg -> FailureTagger a msg -> RetryCmdTagger msg -> (FailureTagger a msg -> Cmd msg) -> ( Model msg, Cmd msg )
-retry model router failureTagger retryCmdTagger cmdConstructor =
+retry model routerTagger failureTagger retryCmdTagger cmdConstructor =
     let
         cmd =
             cmdConstructor interceptedFailureTagger
 
         -- splice retry command, i.e. msg << Msg msg << msg
         interceptedFailureTagger =
-            router << OperationFailed retryCmdTagger << failureTagger
+            routerTagger << CmdFailed retryCmdTagger << failureTagger
     in
         ( { model | retryCount = 1, cmd = cmd }, cmd )
