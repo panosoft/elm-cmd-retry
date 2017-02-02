@@ -42,7 +42,7 @@ type alias RetryRouterTagger msg =
     Tagger for parent to retry original command.
 -}
 type alias RetryCmdTagger msg =
-    Cmd msg -> msg
+    Int -> Cmd msg -> msg
 
 
 {-|
@@ -57,8 +57,10 @@ type alias Config =
 {-|
     Retry Model.
 -}
-type alias Model =
-    {}
+type alias Model msg =
+    { cmd : Cmd msg
+    , retryCount : Int
+    }
 
 
 {-|
@@ -66,7 +68,7 @@ type alias Model =
 -}
 type Msg msg
     = Nop
-    | OperationFailed (RetryCmdTagger msg) (Cmd msg) Int msg
+    | OperationFailed (RetryCmdTagger msg) msg
     | ReturnMsg msg
 
 
@@ -78,7 +80,7 @@ delayUpdateMsg msg delay =
 {-|
     Retry Update.
 -}
-update : Config -> Msg msg -> Model -> ( ( Model, Cmd (Msg msg) ), List msg )
+update : Config -> Msg msg -> Model msg -> ( ( Model msg, Cmd (Msg msg) ), List msg )
 update config msg model =
     case msg of
         Nop ->
@@ -87,10 +89,10 @@ update config msg model =
         ReturnMsg msg ->
             ( model ! [], [ msg ] )
 
-        OperationFailed retryCmdTagger cmd retryCount failureMsg ->
-            (retryCount + 1 >= config.retryMax)
+        OperationFailed retryCmdTagger failureMsg ->
+            (model.retryCount + 1 >= config.retryMax)
                 ? ( ( model ! [], [ failureMsg ] )
-                  , ( model ! [ delayUpdateMsg (ReturnMsg <| retryCmdTagger cmd) <| config.delayNext retryCount ], [] )
+                  , ( model ! [ delayUpdateMsg (ReturnMsg <| retryCmdTagger model.retryCount model.cmd) <| config.delayNext model.retryCount ], [] )
                   )
 
 
@@ -113,14 +115,14 @@ exponentialDelay delay maxDelay retryCount =
 {-|
     Retry an operation.
 -}
-retry : RetryRouterTagger msg -> FailureTagger a msg -> RetryCmdTagger msg -> (FailureTagger a msg -> Cmd msg) -> Cmd msg
-retry router failureTagger retryCmdTagger cmdConstructor =
+retry : Model msg -> RetryRouterTagger msg -> FailureTagger a msg -> RetryCmdTagger msg -> (FailureTagger a msg -> Cmd msg) -> ( Model msg, Cmd msg )
+retry model router failureTagger retryCmdTagger cmdConstructor =
     let
         cmd =
             cmdConstructor interceptedFailureTagger
 
         -- splice retry command, i.e. msg << Msg msg << msg
         interceptedFailureTagger =
-            router << OperationFailed retryCmdTagger cmd 1 << failureTagger
+            router << OperationFailed retryCmdTagger << failureTagger
     in
-        cmd
+        ( { model | retryCount = 1, cmd = cmd }, cmd )
