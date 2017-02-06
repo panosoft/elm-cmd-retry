@@ -61,7 +61,7 @@ type alias RetryCmdTagger msg =
 type alias Config msg =
     { retryMax : Int
     , delayNext : Int -> Time
-    , routerTagger : RetryRouterTagger msg
+    , routeToMeTagger : RetryRouterTagger msg
     }
 
 
@@ -139,6 +139,6 @@ retry config model failureTagger retryCmdTagger cmdConstructor =
 
         -- splice retry command, i.e. msg << Msg msg << msg
         interceptedFailureTagger =
-            config.routerTagger << CmdFailed retryCmdTagger << failureTagger
+            config.routeToMeTagger << CmdFailed retryCmdTagger << failureTagger
     in
         ( { model | retryCount = 1, cmd = cmd }, cmd )

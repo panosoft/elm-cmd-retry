@@ -60,7 +60,7 @@ retryConfig : Retry.Config Msg
 retryConfig =
     { retryMax = 3
     , delayNext = Retry.constantDelay 5000
-	, routerTagger = RetryModule
+	, routeToMeTagger = RetryModule
     }
 
 
@@ -191,7 +191,7 @@ Retry Config.
 type alias Config =
 	{ retryMax : Int
 	, delayNext : Int -> Time
-	, routerTagger : RetryRouterTagger
+	, routeToMeTagger : RetryRouterTagger
 	}
 ```
 
@@ -199,7 +199,7 @@ This is the configuration for Retrying a `Cmd`.
 
 * `retryMax` - The maximum number of retries. N.B. this is the number of retries NOT counting the orginal try.
 * `delayNext` - This is a function that takes a `retryCount` and returns the delay between the NEXT retry. This is in `milliseconds`. See [constantDelay](#constandelay) and [exponentialDelay](#exponentialdelay).
-* `routerTagger` - This the router tagger that will route messages to the Retry Module. This is provided by the Parent of this module.
+* `routeToMeTagger` - This is the router tagger that will route messages to the Retry Module. This is provided by the Parent of this module.
 
 #### Model
 
