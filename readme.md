@@ -56,16 +56,17 @@ type Msg
     | RetryCmd Int Msg (Cmd Msg)
     | RetryModule (Retry.Msg Msg)
 
-retryConfig : Retry.Config
+retryConfig : Retry.Config Msg
 retryConfig =
     { retryMax = 3
     , delayNext = Retry.constantDelay 5000
+	, routerTagger = RetryModule
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-	{ retryModel = Retry.initModel } ! [ Retry.retry model.retryModel RetryModule ConnectError RetryCmd (connectCmd connectionInfo) ]
+	{ retryModel = Retry.initModel } ! [ Retry.retry config model.retryModel ConnectError RetryCmd (connectCmd connectionInfo) ]
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -190,6 +191,7 @@ Retry Config.
 type alias Config =
 	{ retryMax : Int
 	, delayNext : Int -> Time
+	, routerTagger : RetryRouterTagger
 	}
 ```
 
@@ -197,7 +199,7 @@ This is the configuration for Retrying a `Cmd`.
 
 * `retryMax` - The maximum number of retries. N.B. this is the number of retries NOT counting the orginal try.
 * `delayNext` - This is a function that takes a `retryCount` and returns the delay between the NEXT retry. This is in `milliseconds`. See [constantDelay](#constandelay) and [exponentialDelay](#exponentialdelay).
-
+* `routerTagger` - This the router tagger that will route messages to the Retry Module. This is provided by the Parent of this module.
 
 #### Model
 
@@ -260,14 +262,14 @@ This will return `delay` for the 1st retry, `2 * delay` for the 2nd, `4 * delay`
 Retry a Cmd.
 
 ```elm
-retry : Model msg -> RetryRouterTagger msg -> FailureTagger a msg -> RetryCmdTagger msg -> (FailureTagger a msg -> Cmd msg) -> ( Model msg, Cmd msg )
-retry model routerTagger failureTagger retryCmdTagger cmdConstructor
+retry : Config msg -> Model msg -> FailureTagger a msg -> RetryCmdTagger msg -> (FailureTagger a msg -> Cmd msg) -> ( Model msg, Cmd msg )
+retry config model failureTagger retryCmdTagger cmdConstructor =
 ```
 
 See above [example](#example) for usage in context.
 
+* `config` - The Retry Module's `Config`.
 * `model` - The Retry Module's `Model`.
-* `routerTagger` - This the router tagger that will route messages to the Retry Module.
 * `failureTagger` - This is the failure tagger that the Effects Manager's API call would normally expect for a failed operation.
 * `retryCmdTagger` - This is the tagger that will create a `Msg` for the Parent to retry the `Cmd`.
 * `cmdConstructor` - This is a function that constructs the `Cmd` to be retried. It takes a single parameter of type `FailureTagger a msg`. Here `a` is ANY type since this has to work with any Effects Manager.
