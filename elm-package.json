@@ -1,5 +1,5 @@
 {
-    "version": "2.0.2",
+    "version": "3.0.0",
     "summary": "Cmd Retry Mechanism",
     "repository": "https://github.com/panosoft/elm-cmd-retry.git",
     "license": "Unlicense",
@@ -10,8 +10,8 @@
 		"Retry"
 	],
     "dependencies": {
-        "elm-lang/core": "4.0.5 <= v < 5.0.0",
-        "panosoft/elm-utils": "1.0.0 <= v < 2.0.0"
+        "elm-lang/core": "5.0.0 <= v < 6.0.0",
+        "panosoft/elm-utils": "2.0.0 <= v < 3.0.0"
     },
-    "elm-version": "0.17.1 <= v < 0.18.0"
+    "elm-version": "0.18.0 <= v < 0.19.0"
 }

@@ -27,7 +27,7 @@ import Utils.Ops exposing ((?))
 
 delayUpdateMsg : Msg msg -> Time -> Cmd (Msg msg)
 delayUpdateMsg msg delay =
-    Task.perform (\_ -> Nop) (\_ -> msg) <| Process.sleep delay
+    Task.perform (\_ -> msg) <| Process.sleep delay
 
 
 
