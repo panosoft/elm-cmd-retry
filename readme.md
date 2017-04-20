@@ -11,7 +11,7 @@ you have to install this library directly from GitHub, e.g. via [elm-github-inst
 
 ## Usage
 
-Effects Managers that send both `Success` and `Failure` messages such as [elm-postgres](https://github.com/panosoft/elm-postgres), [elm-websocket-browser](https://github.com/panosoft/elm-websocket-browser) or [elm-websocket-server](https://github.com/panosoft/elm-websocket-server) can be used with this library to retry async operations that return retriable errors.
+Effects Managers that send both `Success` and `Failure` messages such as [elm-postgres](https://github.com/panosoft/elm-postgres), [elm-websocket-client](https://github.com/panosoft/elm-websocket-client) or [elm-websocket-server](https://github.com/panosoft/elm-websocket-server) can be used with this library to retry async operations that return retriable errors.
 
 The requirement is that the failed Effect will send a `Failure` message to the App. If an Effect Manager does this, then this library can be used with it.
 
@@ -26,6 +26,7 @@ import ParentChildUpdate exposing (..)
 import Retry exposing (..)
 import Postgres exposing (..)
 
+
 type alias DbConnectionInfo =
     { host : String
     , port_ : Int
@@ -35,74 +36,80 @@ type alias DbConnectionInfo =
     , timeout : Int
     }
 
+
 connectionInfo : DbConnectionInfo
 connectionInfo =
-	{ host = "server"
-	, port_ = "5432"
-	, database = "testDB"
-	, user = "user"
-	, password = "password"
-	, timeout = 5000
-	}
+    { host = "server"
+    , port_ = "5432"
+    , database = "testDB"
+    , user = "user"
+    , password = "password"
+    , timeout = 5000
+    }
+
 
 type alias Model =
     { retryModel : Retry.Model Msg
     }
 
+
 type Msg
     = Nop
-	| Connect ConnectionId
-	| ConnectError ( ConncectionId, String )
+    | Connect ConnectionId
+    | ConnectError ( ConncectionId, String )
     | RetryCmd Int Msg (Cmd Msg)
     | RetryModule (Retry.Msg Msg)
+
 
 retryConfig : Retry.Config Msg
 retryConfig =
     { retryMax = 3
     , delayNext = Retry.constantDelay 5000
-	, routeToMeTagger = RetryModule
+    , routeToMeTagger = RetryModule
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-	{ retryModel = Retry.initModel } ! [ Retry.retry config model.retryModel ConnectError RetryCmd (connectCmd connectionInfo) ]
+    { retryModel = Retry.initModel } ! [ Retry.retry retryConfig model.retryModel ConnectError RetryCmd (connectCmd connectionInfo) ]
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-	let
-		updateRetry =
-			ParentChildUpdate.updateChildParent (Retry.update retryConfig) update .retryModel RetryModule (\model retryModel -> { model | retryModel = retryModel })
-	in
-		case msg of
-			Connect connectionId ->
-				let
-					log =
-						Debug.log "Connected to DB, connectionId: " ++ (toString connectionId)
-				in
-					model ! []
-			ConnectionLost ( connectionId, error ) ->
-				Debug.crash "We've lost our connection: " ++ error ++ " for connectionId: " ++ (toString connectionId)
+    let
+        updateRetry =
+            ParentChildUpdate.updateChildParent (Retry.update retryConfig) update .retryModel RetryModule (\model retryModel -> { model | retryModel = retryModel })
+    in
+        case msg of
+            Connect connectionId ->
+                let
+                    log =
+                        Debug.log "Connected to DB, connectionId: " ++ (toString connectionId)
+                in
+                    model ! []
+            ConnectionLost ( connectionId, error ) ->
+                Debug.crash "We've lost our connection: " ++ error ++ " for connectionId: " ++ (toString connectionId)
 
-			ConnectError ( connectionId, error ) ->
-				Debug.crash <| "After retrying " ++ (toString retryConfig.retryMax) ++ "times we could not connect to DB: " ++ error ++ " for connectionId: " ++ (toString connectionId)
+            ConnectError ( connectionId, error ) ->
+                Debug.crash <| "After retrying " ++ (toString retryConfig.retryMax) ++ "times we could not connect to DB: " ++ error ++ " for connectionId: " ++ (toString connectionId)
 
-			RetryCmd retryCount failureMsg cmd ->
-				let
-					(connectionId, error) =
-						case failureMsg of
-							ConnectError errorInfo ->
-								errorInfo
+            RetryCmd retryCount failureMsg cmd ->
+                let
+                    (connectionId, error) =
+                        case failureMsg of
+                            ConnectError errorInfo ->
+                                errorInfo
 
-							_ -> Debug.crash "BUG -- Should never get here"
+                            _ -> Debug.crash "BUG -- Should never get here"
 
-					log =
-						Debug.log <| "Unable to connect to DB: " ++ error ++ " for connectionId: " ++ (toString connectionId) ++ " Retry: " ++ (toString retryCount)
-				in
-					model ! [cmd]
+                    log =
+                        Debug.log <| "Unable to connect to DB: " ++ error ++ " for connectionId: " ++ (toString connectionId) ++ " Retry: " ++ (toString retryCount)
+                in
+                    model ! [cmd]
 
-			RetryModule msg model ->
-				updateRetry msg model
+            RetryModule msg model ->
+                updateRetry msg model
+
 
 connectCmd : DbConnectionInfo -> FailureTagger ( ConnectionId, String ) Msg -> Cmd Msg
 connectCmd connectionInfo failureTagger =
@@ -154,7 +161,7 @@ Tagger for failed operations.
 
 ```elm
 type alias FailureTagger a msg =
-	a -> msg
+    a -> msg
 ```
 
 This is the Tagger for an API call to an Effects Manager that will take a SINGLE error parameter and create a Message. For the above [example](#example), this is `ConnectError`.
@@ -165,7 +172,7 @@ Tagger to route back to Retry module.
 
 ```elm
 type alias RetryRouterTagger msg =
-	Msg msg -> msg
+    Msg msg -> msg
 ```
 
 This is the Tagger that will wrap `Retry.Msg` for the Retry module. In the above [example](#example), this is `RetryModule`.
@@ -176,7 +183,7 @@ Tagger for parent to retry original command.
 
 ```elm
 type alias RetryCmdTagger msg =
-	Int -> msg -> Cmd msg -> msg
+    Int -> msg -> Cmd msg -> msg
 ```
 
 This is the Tagger that will create a `Msg` for the Parent that will be sent by the Retry module when the `Cmd msg` fails and needs to be retried.
@@ -189,10 +196,10 @@ Retry Config.
 
 ```elm
 type alias Config =
-	{ retryMax : Int
-	, delayNext : Int -> Time
-	, routeToMeTagger : RetryRouterTagger
-	}
+    { retryMax : Int
+    , delayNext : Int -> Time
+    , routeToMeTagger : RetryRouterTagger
+    }
 ```
 
 This is the configuration for Retrying a `Cmd`.

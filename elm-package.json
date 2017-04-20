@@ -1,5 +1,5 @@
 {
-    "version": "3.0.0",
+    "version": "3.0.1",
     "summary": "Cmd Retry Mechanism",
     "repository": "https://github.com/panosoft/elm-cmd-retry.git",
     "license": "Unlicense",
